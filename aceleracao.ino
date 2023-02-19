@@ -1,25 +1,30 @@
-//Carrega a biblioteca do display de LCD
-#include <LiquidCrystal.h>
+#include <SoftwareSerial.h>
 
 const int pinoLDR1 = A3;
 const int pinoLDR2 = A2;
+const int pinoRX = 11;
+const int pinoTX = 10;
  //se o sensor mostrar menos de 600, sabemos que não está mais chegando luz do led nele
-const int THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU = 600;
+const int THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU = 300;
 
 const float DISTANCIA_ENTRE_SENSORES_EM_M = 0.46;
 
-// LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
+SoftwareSerial bluetooth(pinoRX, pinoTX);
 
-int tempoQueABolinhaPassouNoLDR1 = 0;
-int tempoQueABolinhaPassouNoLDR2 = 0;
+unsigned long tempoQueABolinhaPassouNoLDR1 = 0;
+unsigned long tempoQueABolinhaPassouNoLDR2 = 0;
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
+  bluetooth.begin(9600);
 
   pinMode(pinoLDR1, INPUT);
   pinMode(pinoLDR2, INPUT);
+}
 
-  // lcd.begin(16, 2);
+void imprime(char* mensagem) {
+  Serial.println(mensagem);
+  bluetooth.print(mensagem);
 }
 
 void loop(){
@@ -29,37 +34,35 @@ void loop(){
   // bolinha passou pelo sensor 1
   if(tempoQueABolinhaPassouNoLDR1 == 0 && valorLDR1 > THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU) {
     tempoQueABolinhaPassouNoLDR1 = millis();
+    char buffer[40];
+    sprintf(buffer, "Tempo no sensor 1: %d\n", tempoQueABolinhaPassouNoLDR1);
+    imprime(buffer);
   }
 
   // bolinha passou pelo sensor 2
   if(tempoQueABolinhaPassouNoLDR1 != 0 && tempoQueABolinhaPassouNoLDR2 == 0 && valorLDR2 > THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU) {
     tempoQueABolinhaPassouNoLDR2 = millis();
+    char buffer[40];
+    sprintf(buffer, "Tempo no sensor 2: %d\n", tempoQueABolinhaPassouNoLDR2);
+    imprime(buffer);
   }
 
   if(tempoQueABolinhaPassouNoLDR1 != 0 && tempoQueABolinhaPassouNoLDR2 != 0) {
     float tempoEntreSensoresEmSegundos = (tempoQueABolinhaPassouNoLDR2 - tempoQueABolinhaPassouNoLDR1) / 1000.0;
-    float velocidade = DISTANCIA_ENTRE_SENSORES_EM_M / tempoEntreSensoresEmSegundos;
-    Serial.println("PASSOU");
-    Serial.println(tempoQueABolinhaPassouNoLDR1);
-    Serial.println(tempoQueABolinhaPassouNoLDR2);
-    Serial.println(tempoEntreSensoresEmSegundos);
-    Serial.println(velocidade);
-    Serial.println("-----------------------");
+    float velocidade = tempoEntreSensoresEmSegundos / DISTANCIA_ENTRE_SENSORES_EM_M;
+
+    char bufferTempo[10];
+    dtostrf(tempoEntreSensoresEmSegundos, 1, 2, bufferTempo);
+    char bufferVelocidade[10];
+    dtostrf(velocidade, 1, 2, bufferVelocidade);
+
+    char buffer[100];
+    sprintf(buffer, "Velocidade: %s m/s - Tempo: %s s\n", bufferVelocidade, bufferTempo);
+    imprime(buffer);
 
     tempoQueABolinhaPassouNoLDR1 = 0;
     tempoQueABolinhaPassouNoLDR2 = 0;
   }
-
-  // if(tempoQueABolinhaPassouNoLDR1 != 0 && tempoQueABolinhaPassouNoLDR2 != 0) {
-  //   const int diff = tempoQueABolinhaPassouNoLDR2 - tempoQueABolinhaPassouNoLDR1;
-
-  //   lcd.clear();
-  //   lcd.setCursor(0, 0);
-  //   lcd.print("TEMPO (em ms)");
-  //   lcd.setCursor(0, 1);
-  //   lcd.print(diff);
-  //   delay(15000);
-  // }
 }
 
 // Cabos
@@ -68,3 +71,5 @@ void loop(){
 // Marrom vai na 5v
 // Verde vai na A2
 // Amarelo vai na A3
+// Branco vai na 10
+// Cinza vai na 11
