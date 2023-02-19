@@ -1,18 +1,25 @@
 #include <SoftwareSerial.h>
 
-const int pinoLDR1 = A3;
-const int pinoLDR2 = A2;
+const int pinoLDR1 = A2;
+const int pinoLDR2 = A3;
 const int pinoRX = 11;
 const int pinoTX = 10;
- //se o sensor mostrar menos de 600, sabemos que não está mais chegando luz do led nele
-const int THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU = 300;
 
 const float DISTANCIA_ENTRE_SENSORES_EM_M = 0.46;
+
+int thresholdDoLDR = 300;
+
+bool debugMode = false;
 
 SoftwareSerial bluetooth(pinoRX, pinoTX);
 
 unsigned long tempoQueABolinhaPassouNoLDR1 = 0;
 unsigned long tempoQueABolinhaPassouNoLDR2 = 0;
+
+void imprime(char* mensagem) {
+  Serial.print(mensagem);
+  bluetooth.print(mensagem);
+}
 
 void setup(){
   Serial.begin(115200);
@@ -20,19 +27,24 @@ void setup(){
 
   pinMode(pinoLDR1, INPUT);
   pinMode(pinoLDR2, INPUT);
-}
 
-void imprime(char* mensagem) {
-  Serial.println(mensagem);
-  bluetooth.print(mensagem);
+  imprime("Envie 1 para habilitar debug e 0 para desabilitar\n");
+  imprime("Para mudar o threshold envie 2 para 200, 3 para 300 e assim por diante até 9\n");
 }
 
 void loop(){
   const int valorLDR1 = analogRead(pinoLDR1);
   const int valorLDR2 = analogRead(pinoLDR2);
 
+  if(debugMode) {
+    char buffer[20];
+    sprintf(buffer, "Sensor 1: %d\n Sensor 2: %d\n Threshold: %d\n", valorLDR1, valorLDR2, thresholdDoLDR);
+    imprime(buffer);
+    delay(1000);
+  }
+
   // bolinha passou pelo sensor 1
-  if(tempoQueABolinhaPassouNoLDR1 == 0 && valorLDR1 > THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU) {
+  if(tempoQueABolinhaPassouNoLDR1 == 0 && valorLDR1 > thresholdDoLDR) {
     tempoQueABolinhaPassouNoLDR1 = millis();
     char buffer[40];
     sprintf(buffer, "Tempo no sensor 1: %d\n", tempoQueABolinhaPassouNoLDR1);
@@ -40,7 +52,7 @@ void loop(){
   }
 
   // bolinha passou pelo sensor 2
-  if(tempoQueABolinhaPassouNoLDR1 != 0 && tempoQueABolinhaPassouNoLDR2 == 0 && valorLDR2 > THRESHOLD_PARA_DETECTAR_QUE_A_BOLINHA_PASSOU) {
+  if(tempoQueABolinhaPassouNoLDR1 != 0 && tempoQueABolinhaPassouNoLDR2 == 0 && valorLDR2 > thresholdDoLDR) {
     tempoQueABolinhaPassouNoLDR2 = millis();
     char buffer[40];
     sprintf(buffer, "Tempo no sensor 2: %d\n", tempoQueABolinhaPassouNoLDR2);
@@ -62,6 +74,31 @@ void loop(){
 
     tempoQueABolinhaPassouNoLDR1 = 0;
     tempoQueABolinhaPassouNoLDR2 = 0;
+  }
+
+  if(bluetooth.available()){
+    int dadoBluetooth = bluetooth.read();
+
+    if(dadoBluetooth == '1')
+      debugMode = true;
+    else if (dadoBluetooth == '0')
+      debugMode = false;
+    else if (dadoBluetooth == '2')
+      thresholdDoLDR = 200;
+    else if (dadoBluetooth == '3')
+      thresholdDoLDR = 300;
+    else if (dadoBluetooth == '4')
+      thresholdDoLDR = 400;
+    else if (dadoBluetooth == '5')
+      thresholdDoLDR = 500;
+    else if (dadoBluetooth == '6')
+      thresholdDoLDR = 600;
+    else if (dadoBluetooth == '7')
+      thresholdDoLDR = 700;
+    else if (dadoBluetooth == '8')
+      thresholdDoLDR = 800;
+    else if (dadoBluetooth == '9')
+      thresholdDoLDR = 900;
   }
 }
 
